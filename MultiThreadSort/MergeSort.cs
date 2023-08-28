@@ -126,10 +126,21 @@ namespace MultiThreadSort
 
         #region Semaphores
         //TODO: Define any required semaphore here
+
+        static Semaphore semaphore1 = new Semaphore(0);
+        static Semaphore semaphore2 = new Semaphore(0);
         #endregion
 
         #region Threads
         //TODO: Define any required thread objects here
+
+        static Thread mergeSortThreads1; // Thread array for merge sort threads
+        static Thread mergeSortThreads2; // Thread array for merge sort threads
+        static Thread mergeThread;        // Thread for merging
+
+
+
+
         #endregion
 
         #region Sort Function
@@ -151,6 +162,24 @@ namespace MultiThreadSort
                  * 2) Create & Start TWO Merge Sort concurrent threads & ONE Merge thread
                  * 3) Use semaphores to handle any dependency or critical section
                  */
+                
+                object parameters1 = Params2Object(array, 1, array.Length / 2, 0, 0);
+                object parameters2 = Params2Object(array, array.Length / 2 + 1, array.Length, 0, 0);
+                object parameters3 = Params2Object(array, 1, array.Length, array.Length / 2, 0);
+
+                mergeSortThreads1 = new Thread(MSortMT);
+                mergeSortThreads2 = new Thread(MSortMT);
+
+                mergeSortThreads1.Start(parameters1);
+                mergeSortThreads2.Start(parameters2);
+
+                mergeSortThreads1.Join();
+                mergeSortThreads2.Join();
+
+                mergeThread = new Thread(MergeMT);
+                mergeThread.Start(parameters3);
+                mergeThread.Join();
+
             }
             #endregion
 
@@ -186,6 +215,9 @@ namespace MultiThreadSort
             if (NumMergeSortThreads == 2)       //TASK 2
             {
                 //TODO: Use semaphores to handle any dependency or critical section
+                semaphore1.Signal();
+                semaphore2.Signal();
+
             }
             #endregion
 
@@ -212,7 +244,10 @@ namespace MultiThreadSort
             if (NumMergeSortThreads == 2)       //TASK 2
             {
                 //TODO: Use semaphores to handle any dependency or critical section
+                semaphore1.Wait();
+                semaphore2.Wait();
                 Merge(A, s, m, e);
+               
             }
             #endregion
 
