@@ -1,3 +1,6 @@
+
+
+
 using System;
 using System.Collections;
 using System.Text;
@@ -13,19 +16,13 @@ namespace MultiThreadSort
         {
             #region [TASK 1.1]
             //TODO: Encapsulate the given params into a single ArrayList object, then return it
-
-            ArrayList enteredParameters; 
-            enteredParameters = new ArrayList();
-
-
+            ArrayList enteredParameters = new ArrayList();
             enteredParameters.Add(A);
             enteredParameters.Add(s);
             enteredParameters.Add(e);
             enteredParameters.Add(m);
             enteredParameters.Add(node_idx);
-
             return enteredParameters;
-            
             #endregion
         }
 
@@ -33,9 +30,7 @@ namespace MultiThreadSort
         {
             #region [TASK 1.2]
             //TODO: Extract ALL params from the given ArrayList object "parameters", then store each of them in the corresponding "ref" variable 
-            
             ArrayList paramList = (ArrayList)parameters;
-
             A = (int[])paramList[0];
             s = (int)paramList[1];
             e = (int)paramList[2];
@@ -120,25 +115,22 @@ namespace MultiThreadSort
 
         //TODO: Change this function to be MULTITHREADED
         //HINT: Remember to handle any dependency and/or critical section issues
-        
+
         #region Multithreaded Sort [REMAINING TASKS]
         static int NumMergeSortThreads;
 
         #region Semaphores
         //TODO: Define any required semaphore here
-
-        static Semaphore semaphore1 = new Semaphore(0);
-        static Semaphore semaphore2 = new Semaphore(0);
+        public static Semaphore semaphore1;
+        public static Semaphore semaphore2;
         #endregion
 
         #region Threads
         //TODO: Define any required thread objects here
+        public static Thread sortThread1;
+        public static Thread sortThread2;
 
-        static Thread mergeSortThreads1; // Thread array for merge sort threads
-        static Thread mergeSortThreads2; // Thread array for merge sort threads
-        static Thread mergeThread;        // Thread for merging
-
-
+        public static Thread mergeThread1;
 
 
         #endregion
@@ -151,7 +143,7 @@ namespace MultiThreadSort
             int m = (s + e) / 2;
             int node_idx = 0;
 
-            NumMergeSortThreads = 2;                //TASK 2
+            NumMergeSortThreads = 2;               //TASK 2
             //NumMergeSortThreads = 4;              //TASK 3
 
             #region [TASK 2]
@@ -162,24 +154,26 @@ namespace MultiThreadSort
                  * 2) Create & Start TWO Merge Sort concurrent threads & ONE Merge thread
                  * 3) Use semaphores to handle any dependency or critical section
                  */
-                
-                object parameters1 = Params2Object(array, 1, array.Length / 2, 0, 0);
-                object parameters2 = Params2Object(array, array.Length / 2 + 1, array.Length, 0, 0);
-                object parameters3 = Params2Object(array, 1, array.Length, array.Length / 2, 0);
 
-                mergeSortThreads1 = new Thread(MSortMT);
-                mergeSortThreads2 = new Thread(MSortMT);
+                semaphore1 = new Semaphore(0);
+                semaphore2 = new Semaphore(0);
 
-                mergeSortThreads1.Start(parameters1);
-                mergeSortThreads2.Start(parameters2);
+                object parameters1 = Params2Object(array, s, m, 0, 1);
+                object parameters2 = Params2Object(array, m + 1, e, 0, 2);
+                object parameters3 = Params2Object(array, s, e, m, 0);
 
-                mergeSortThreads1.Join();
-                mergeSortThreads2.Join();
+                sortThread1 = new Thread(MSortMT);
+                sortThread2 = new Thread(MSortMT);
 
-                mergeThread = new Thread(MergeMT);
-                mergeThread.Start(parameters3);
-                mergeThread.Join();
+                sortThread1.Start(parameters1);
+                sortThread2.Start(parameters2);
 
+
+
+                mergeThread1 = new Thread(MergeMT);
+                mergeThread1.Start(parameters3);
+
+                semaphore2.Wait();
             }
             #endregion
 
@@ -188,13 +182,15 @@ namespace MultiThreadSort
             {
                 /*TODO: 
                  * 1) Initialize any required semaphore
-                 * 2) Create & Start TWO Merge Sort concurrent threads & ONE Merge thread
+                 * 2) Create & Start FOUR Merge Sort concurrent threads & THREE Merge thread
                  * 3) Use semaphores to handle any dependency or critical section
                  */
+
+
             }
 
             #endregion
-            
+
         }
 
         private static void MSortMT(object parameters)
@@ -208,7 +204,7 @@ namespace MultiThreadSort
             Object2Params(parameters, ref A, ref s, ref e, ref m, ref node_idx);
             #endregion
 
-            
+
             MSort(A, s, e);
 
             #region [TASK 2] 
@@ -216,8 +212,7 @@ namespace MultiThreadSort
             {
                 //TODO: Use semaphores to handle any dependency or critical section
                 semaphore1.Signal();
-                semaphore2.Signal();
-
+                semaphore1.Signal();
             }
             #endregion
 
@@ -239,15 +234,16 @@ namespace MultiThreadSort
             int node_idx = 0;
             Object2Params(parameters, ref A, ref s, ref e, ref m, ref node_idx);
             #endregion
-           
+
             #region [TASK 2]
             if (NumMergeSortThreads == 2)       //TASK 2
             {
                 //TODO: Use semaphores to handle any dependency or critical section
                 semaphore1.Wait();
-                semaphore2.Wait();
+                semaphore1.Wait();
                 Merge(A, s, m, e);
-               
+                semaphore2.Signal();
+
             }
             #endregion
 
@@ -257,7 +253,7 @@ namespace MultiThreadSort
                 //TODO: Use semaphores to handle any dependency or critical section
                 Merge(A, s, m, e);
             }
-                
+
             #endregion
         }
         #endregion
@@ -266,3 +262,5 @@ namespace MultiThreadSort
 
     }
 }
+
+
